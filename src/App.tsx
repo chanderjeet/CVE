@@ -16,7 +16,7 @@ const severityFilters: { value: SeverityFilter; label: string; tone: SeverityTon
   { value: 'low', label: 'MINION', tone: 'low' },
 ]
 
-const resultLimit = 200
+const pageSize = 20
 
 function getSeverity(score: number | null | undefined): Severity | null {
   if (score === null || score === undefined) return null
@@ -29,15 +29,6 @@ function getSeverity(score: number | null | undefined): Severity | null {
 function getProductName(title: string, id: string): string {
   const withoutId = title.replace(id, '').replace(/^:\s*/, '')
   return withoutId.replace(/\s*\(Update:.*$/i, '').trim() || 'Vendor / product name'
-}
-
-function formatClock(value: Date | null): string {
-  if (!value) return '--:--'
-  return new Intl.DateTimeFormat('en', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(value)
 }
 
 function getRankedCves(items: CveItem[], query: string, severityFilter: SeverityFilter): CveItem[] {
@@ -75,7 +66,7 @@ function App() {
   const [query, setQuery] = useState('')
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [lastSynced, setLastSynced] = useState<Date | null>(null)
+  const [visibleCount, setVisibleCount] = useState(pageSize)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -86,7 +77,6 @@ function App() {
       try {
         const feedItems = await fetchCveFeed(controller.signal)
         setItems(feedItems)
-        setLastSynced(new Date())
         setStatus('ready')
       } catch (error) {
         if (controller.signal.aborted) return
@@ -105,15 +95,8 @@ function App() {
     () => getRankedCves(items, query, severityFilter),
     [items, query, severityFilter],
   )
-  const displayedItems = rankedItems.slice(0, resultLimit)
-  const systemMessage =
-    status === 'error'
-      ? 'Connection lost. The feed could not be updated.'
-      : status === 'loading'
-        ? 'Scanning the live CVE feed...'
-        : displayedItems[0]
-          ? `A new [${displayedItems[0].id}] appeared in the feed! What will you do?`
-          : 'No encounters match the current inventory filters.'
+  const displayedItems = rankedItems.slice(0, visibleCount)
+  const remainingCount = rankedItems.length - displayedItems.length
 
   return (
     <div className="screen-shell">
@@ -138,7 +121,10 @@ function App() {
               type="search"
               placeholder="CVE-YYYY-NNNNN"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setVisibleCount(pageSize)
+              }}
             />
             <div className="filter-list" aria-label="Vulnerability severity filters">
               {severityFilters.map(({ value, label, tone }) => (
@@ -147,7 +133,10 @@ function App() {
                   type="button"
                   aria-pressed={severityFilter === value}
                   className={`filter-btn ${tone} ${severityFilter === value ? 'is-selected' : ''}`}
-                  onClick={() => setSeverityFilter(value)}
+                  onClick={() => {
+                    setSeverityFilter(value)
+                    setVisibleCount(pageSize)
+                  }}
                 >
                   <span aria-hidden="true" />
                   {label}
@@ -183,74 +172,67 @@ function App() {
               {rankedItems.length === 0 ? (
                 <div className="feed-message">No CVEs match this search or severity filter.</div>
               ) : (
-                <div className="encounter-list">
-                  {displayedItems.map((item, index) => {
-                    const severity = getSeverity(item.cvssScore)
-                    const tone = severity ?? 'unknown'
-                    const score = item.cvssScore
-                    return (
-                      <article
-                        className={`encounter-card ${tone}`}
-                        key={`${item.id}-${item.publishedAt ?? index}`}
-                      >
-                        <div className="bug-frame">
-                          <PixelBug tone={tone} />
-                        </div>
-                        <div className="encounter-details">
-                          <div className="encounter-title-row">
-                            <a className="cve-id" href={item.link} target="_blank" rel="noreferrer">
-                              {item.id}
-                            </a>
-                            <span className={`pill ${tone}`}>{severity ?? 'UNRANKED'}</span>
+                <>
+                  <div className="encounter-list">
+                    {displayedItems.map((item, index) => {
+                      const severity = getSeverity(item.cvssScore)
+                      const tone = severity ?? 'unknown'
+                      const score = item.cvssScore
+                      return (
+                        <article
+                          className={`encounter-card ${tone}`}
+                          key={`${item.id}-${item.publishedAt ?? index}`}
+                        >
+                          <div className="bug-frame">
+                            <PixelBug tone={tone} />
                           </div>
-                          <p className="product-name">[{getProductName(item.title, item.id)}]</p>
-                          <div className="score-row">
-                            <span className="score-label">HP</span>
-                            <div
-                              className="score-meter"
-                              role="img"
-                              aria-label={
-                                score === null || score === undefined
-                                  ? 'CVSS score unavailable'
-                                  : `CVSS ${score.toFixed(1)}`
-                              }
-                            >
-                              {score !== null && score !== undefined && (
-                                <span style={{ width: `${score * 10}%` }} />
-                              )}
+                          <div className="encounter-details">
+                            <div className="encounter-title-row">
+                              <a className="cve-id" href={item.link} target="_blank" rel="noreferrer">
+                                {item.id}
+                              </a>
+                              <span className={`pill ${tone}`}>{severity ?? 'UNRANKED'}</span>
+                            </div>
+                            <p className="product-name">[{getProductName(item.title, item.id)}]</p>
+                            <div className="score-row">
+                              <span className="score-label">HP</span>
+                              <div
+                                className="score-meter"
+                                role="img"
+                                aria-label={
+                                  score === null || score === undefined
+                                    ? 'CVSS score unavailable'
+                                    : `CVSS ${score.toFixed(1)}`
+                                }
+                              >
+                                {score !== null && score !== undefined && (
+                                  <span style={{ width: `${score * 10}%` }} />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <a className="fight-btn" href={item.link} target="_blank" rel="noreferrer">
-                          FIGHT
-                        </a>
-                      </article>
-                    )
-                  })}
-                </div>
+                          <a className="fight-btn" href={item.link} target="_blank" rel="noreferrer">
+                            FIGHT
+                          </a>
+                        </article>
+                      )
+                    })}
+                  </div>
+                  {remainingCount > 0 && (
+                    <button
+                      className="load-more-btn"
+                      type="button"
+                      onClick={() => setVisibleCount((count) => count + pageSize)}
+                    >
+                      LOAD NEXT {Math.min(pageSize, remainingCount)} CVES
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
         </section>
       </main>
-
-      <footer className="system-log" aria-live="polite">
-        <div className="system-frame">
-          <div className="system-log-header">
-            <h2>SYSTEM</h2>
-            <div className="system-meta">
-              <span className="sync-time">LAST SYNC {formatClock(lastSynced)}</span>
-              <a href="https://cve.now/feed" target="_blank" rel="noreferrer">
-                CVE.NOW RSS
-              </a>
-            </div>
-          </div>
-          <p>{systemMessage}</p>
-          <span className="system-cursor" aria-hidden="true">
-            ▾
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }
