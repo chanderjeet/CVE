@@ -31,7 +31,14 @@ export function filterAndSortCves(items: CveItem[], filters: CveFilters): CveIte
       return matchesQuery && matchesDate
     })
     .sort((a, b) => {
-      if (filters.sortOrder === 'title') return a.title.localeCompare(b.title)
+      if (filters.sortOrder === 'title') {
+        const aHasDate = Boolean(a.publishedAt)
+        const bHasDate = Boolean(b.publishedAt)
+
+        if (aHasDate !== bHasDate) return aHasDate ? -1 : 1
+        return a.title.localeCompare(b.title)
+      }
+
       if (!a.publishedAt) return b.publishedAt ? 1 : 0
       if (!b.publishedAt) return -1
       const left = Date.parse(a.publishedAt)

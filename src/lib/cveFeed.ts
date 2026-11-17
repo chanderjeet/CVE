@@ -66,15 +66,9 @@ export function parseCveFeed(xml: string): CveItem[] {
     throw new Error('The CVE feed does not contain a valid RSS channel.')
   }
 
-  const items = normalizeItems(document.rss.channel.item)
+  return normalizeItems(document.rss.channel.item)
     .map(parseItem)
     .filter((item): item is CveItem => item !== null)
-
-  if (normalizeItems(document.rss.channel.item).length > 0 && items.length === 0) {
-    throw new Error('The CVE feed contains no readable entries.')
-  }
-
-  return items
 }
 
 export async function fetchCveFeed(signal?: AbortSignal): Promise<CveItem[]> {
