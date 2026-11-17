@@ -106,21 +106,20 @@ function App() {
     [items, query, severityFilter],
   )
   const displayedItems = rankedItems.slice(0, resultLimit)
-  const highestScore = items.reduce<number | null>(
-    (highest, item) =>
-      item.cvssScore !== null &&
-      item.cvssScore !== undefined &&
-      (highest === null || item.cvssScore > highest)
-        ? item.cvssScore
-        : highest,
-    null,
-  )
+  const systemMessage =
+    status === 'error'
+      ? 'Connection lost. The feed could not be updated.'
+      : status === 'loading'
+        ? 'Scanning the live CVE feed...'
+        : displayedItems[0]
+          ? `A new [${displayedItems[0].id}] appeared in the feed! What will you do?`
+          : 'No encounters match the current inventory filters.'
 
   return (
     <div className="screen-shell">
       <header className="top-bar">
         <div className="brand">
-          <h1>CV<span>E</span> SIGNAL</h1>
+          <h1>CVE SIGNAL</h1>
           <p>QUEST LOG: LIVE VULNERABILITY FEED</p>
         </div>
         <div className="player-stats" aria-label="Feed stats">
@@ -155,17 +154,12 @@ function App() {
                 </button>
               ))}
             </div>
-            <p className="inventory-count">{rankedItems.length} ENCOUNTERS</p>
           </div>
         </aside>
 
         <section className="encounters" aria-label="CVE encounters">
           <div className="section-heading">
             <h2>ENCOUNTERS</h2>
-            <span>
-              {displayedItems.length ? `SHOWING ${displayedItems.length} / ${rankedItems.length}` : ''}
-              {rankedItems.length > resultLimit ? ' · TOP 200' : ''}
-            </span>
           </div>
 
           {status === 'error' && (
@@ -209,7 +203,7 @@ function App() {
                             </a>
                             <span className={`pill ${tone}`}>{severity ?? 'UNRANKED'}</span>
                           </div>
-                          <p className="product-name">{getProductName(item.title, item.id)}</p>
+                          <p className="product-name">[{getProductName(item.title, item.id)}]</p>
                           <div className="score-row">
                             <span className="score-label">HP</span>
                             <div
@@ -225,11 +219,7 @@ function App() {
                                 <span style={{ width: `${score * 10}%` }} />
                               )}
                             </div>
-                            <span className="score-value">{score?.toFixed(1) ?? 'N/A'}</span>
                           </div>
-                          <p className="description">
-                            {item.description || 'No description provided by the source feed.'}
-                          </p>
                         </div>
                         <a className="fight-btn" href={item.link} target="_blank" rel="noreferrer">
                           FIGHT
@@ -246,23 +236,18 @@ function App() {
 
       <footer className="system-log" aria-live="polite">
         <div className="system-frame">
-          <h2>SYSTEM</h2>
-          <p>
-            {status === 'error'
-              ? 'Connection lost. The feed could not be updated.'
-              : status === 'loading'
-                ? 'Scanning the live CVE feed...'
-                : `${displayedItems.length} CVE${displayedItems.length === 1 ? '' : 'S'} ready. Highest CVSS: ${highestScore?.toFixed(1) ?? 'N/A'}.`}
-          </p>
-          <span className={`sync-time ${status === 'error' ? 'is-error' : ''}`}>
-            {status === 'error' ? (
-              '!'
-            ) : (
-              <>
-                LAST SYNC {formatClock(lastSynced)} ·{' '}
-                <a href="https://cve.now/feed" target="_blank" rel="noreferrer">CVE.NOW RSS</a>
-              </>
-            )}
+          <div className="system-log-header">
+            <h2>SYSTEM</h2>
+            <div className="system-meta">
+              <span className="sync-time">LAST SYNC {formatClock(lastSynced)}</span>
+              <a href="https://cve.now/feed" target="_blank" rel="noreferrer">
+                CVE.NOW RSS
+              </a>
+            </div>
+          </div>
+          <p>{systemMessage}</p>
+          <span className="system-cursor" aria-hidden="true">
+            ▾
           </span>
         </div>
       </footer>
