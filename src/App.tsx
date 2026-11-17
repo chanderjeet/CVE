@@ -15,7 +15,7 @@ const severityFilters: { value: SeverityFilter; label: string }[] = [
   { value: 'low', label: 'LOW' },
 ]
 
-const pageSize = 8
+const pageSize = 200
 
 function getSeverity(score: number | null | undefined): Severity | null {
   if (score === null || score === undefined) return null
