@@ -8,11 +8,11 @@ type Severity = 'critical' | 'high' | 'medium' | 'low'
 type SeverityFilter = 'all' | Severity
 
 const severityFilters: { value: SeverityFilter; label: string }[] = [
-  { value: 'all', label: 'ALL' },
-  { value: 'critical', label: 'CRITICAL' },
-  { value: 'high', label: 'HIGH' },
-  { value: 'medium', label: 'MEDIUM' },
-  { value: 'low', label: 'LOW' },
+  { value: 'all', label: 'ALL FOES' },
+  { value: 'critical', label: 'BOSS' },
+  { value: 'high', label: 'ELITE' },
+  { value: 'medium', label: 'COMMON' },
+  { value: 'low', label: 'MINION' },
 ]
 
 const pageSize = 200
@@ -27,7 +27,7 @@ function getSeverity(score: number | null | undefined): Severity | null {
 
 function getProductName(title: string, id: string): string {
   const withoutId = title.replace(id, '').replace(/^:\s*/, '')
-  return withoutId.replace(/\s*\(Update:.*$/i, '').trim() || 'Description unavailable'
+  return withoutId.replace(/\s*\(Update:.*$/i, '').trim() || 'Vendor / product name'
 }
 
 function formatClock(value: Date | null): string {
@@ -100,98 +100,62 @@ function App() {
     [matchingItems],
   )
 
-  const highestScore = items.reduce<number | null>(
-    (highest, item) =>
-      item.cvssScore !== null &&
-      item.cvssScore !== undefined &&
-      (highest === null || item.cvssScore > highest)
-        ? item.cvssScore
-        : highest,
-    null,
-  )
+  const displayedItems = rankedItems.slice(0, Math.min(visibleCount, 4))
 
-  const today = new Date()
-  const criticalToday = items.filter((item) => {
-    if (getSeverity(item.cvssScore) !== 'critical' || !item.publishedAt) return false
-    const published = new Date(item.publishedAt)
-    return (
-      published.getFullYear() === today.getFullYear() &&
-      published.getMonth() === today.getMonth() &&
-      published.getDate() === today.getDate()
-    )
-  }).length
-
-  const displayedItems = rankedItems.slice(0, visibleCount)
+  const topItem = rankedItems[0]
+  const currentId = topItem?.id ?? 'CVE-YYYY-NNNN'
 
   return (
     <div className="screen-shell">
       <header className="top-bar" aria-label="Status bar">
-        <span>CVES <strong>[{items.length}]</strong></span>
-        <span>HI-SCORE <strong>[{highestScore?.toFixed(1) ?? 'N/A'}]</strong></span>
-        <span className={`live-state ${status === 'error' ? 'is-error' : ''}`}>
-          {status === 'error' ? 'FEED ERROR' : status === 'loading' ? 'SYNCING' : 'LIVE · SYNCED'}{' '}
-          <em>[{formatClock(lastSynced)}]</em>
-        </span>
-      </header>
-
-      <main className="page">
-        <div className="hero-block">
-          <h1 className="hero-title">
-            <span className="line-one">CVE</span>
-            <span className="line-two">SIGNAL</span>
-          </h1>
-          <p className="hero-feed">LIVE VULNERABILITY FEED</p>
-          <p className="hero-copy">
-            Every new disclosure, ranked like a high-score table.
-            <span>Search, filter and defend your stack.</span>
-          </p>
+        <div className="brand-block">
+          <h1 className="brand-title">CVE SIGNAL</h1>
         </div>
 
-        <section className="search-panel" aria-label="Search vulnerabilities">
-          <label className="search-label" htmlFor="cve-search">
-            ENTER CVE ID OR KEYWORD
+        <div className="top-bar-meta">
+          <button type="button" className="meta-pill is-live">
+            LV <span>[00]</span>
+          </button>
+          <button type="button" className="meta-pill">
+            XP <span>[0000]</span>
+          </button>
+        </div>
+      </header>
+
+      <main className="page-layout">
+        <aside className="inventory-panel">
+          <h2>INVENTORY</h2>
+
+          <label className="panel-label" htmlFor="cve-search">
+            SEARCH SCROLL
           </label>
           <div className="search-box">
             <input
               id="cve-search"
               type="search"
-              placeholder="CVE-2026-12345 or keyword"
+              placeholder="CVE-YYYY-NNNN"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
-          <div className="filter-row" aria-label="Vulnerability severity filters">
+
+          <div className="filter-stack" aria-label="Vulnerability severity filters">
             {severityFilters.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 aria-pressed={severityFilter === value}
-                className={`filter-btn ${severityFilter === value ? 'is-selected' : ''}`}
+                className={`filter-btn ${severityFilter === value ? 'is-selected' : ''} ${value === 'all' ? 'all' : value}`}
                 onClick={() => setSeverityFilter(value)}
               >
                 {label}
               </button>
             ))}
           </div>
-        </section>
+        </aside>
 
-        <section className="stats-grid" aria-label="Vulnerability stats">
-          <div className="stat-card lime">
-            <span className="stat-name">TOTAL CVES</span>
-            <span className="stat-value">{status === 'loading' && items.length === 0 ? '...' : items.length}</span>
-          </div>
-          <div className="stat-card pink">
-            <span className="stat-name">CRITICAL TODAY</span>
-            <span className="stat-value">{criticalToday}</span>
-          </div>
-          <div className="stat-card cyan">
-            <span className="stat-name">LAST SYNC</span>
-            <span className="stat-value">{formatClock(lastSynced)}</span>
-          </div>
-        </section>
-
-        <section className="leaderboard" aria-label="Vulnerability feed">
-          <div className="leaderboard-header">★ {severityFilter === 'all' ? 'HIGH SCORES' : severityFilter.toUpperCase()} ★</div>
+        <section className="encounters-panel" aria-label="Vulnerability feed">
+          <h2>ENCOUNTERS</h2>
 
           {status === 'error' && (
             <div className="feed-message error-message" role="alert">
@@ -210,71 +174,55 @@ function App() {
           )}
 
           {status !== 'error' && !(status === 'loading' && items.length === 0) && (
-            <>
-              {rankedItems.length === 0 ? (
+            <div className="encounter-list">
+              {displayedItems.length === 0 ? (
                 <div className="feed-message">No CVEs match this search or severity filter.</div>
               ) : (
-                <div className="leaderboard-table" role="table" aria-label="CVE feed results">
-                  <div className="table-head" role="row">
-                    <span>RANK</span>
-                    <span>CVE ID</span>
-                    <span>PRODUCT / DESCRIPTION</span>
-                    <span>LEVEL</span>
-                    <span>CVSS</span>
-                  </div>
-                  {displayedItems.map((item, index) => {
-                    const severity = getSeverity(item.cvssScore)
-                    const score = item.cvssScore
-                    const tone = severity === 'critical' ? 'crit' : severity === 'medium' ? 'med' : severity
-                    return (
-                      <a
-                        className="table-row"
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        key={`${item.id}-${item.publishedAt ?? index}`}
-                        role="row"
-                      >
-                        <span className="rank-cell">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="id-cell">{item.id}</span>
-                        <span className="product-cell">
-                          <strong>{getProductName(item.title, item.id)}</strong>
-                          <span>{item.description || 'No description provided by the source feed.'}</span>
-                        </span>
-                        <span className="level-cell">
-                          <span className={`pill ${tone ?? 'unknown'}`}>{severity ?? 'N/A'}</span>
-                        </span>
-                        <span className="meter-cell" aria-label={score === null || score === undefined ? 'CVSS score unavailable' : `CVSS ${score.toFixed(1)}`}>
-                          {score === null || score === undefined ? (
-                            <span className="score-unavailable">N/A</span>
-                          ) : (
-                            <>
-                              <span className={`meter ${tone ?? ''}`} style={{ width: `${score * 10}%` }} />
-                              <span className="score-value">{score.toFixed(1)}</span>
-                            </>
-                          )}
-                        </span>
-                      </a>
-                    )
-                  })}
-                </div>
+                displayedItems.map((item, index) => {
+                  const severity = getSeverity(item.cvssScore)
+                  const score = item.cvssScore ?? 0
+                  const tone = severity === 'critical' ? 'boss' : severity === 'high' ? 'elite' : severity === 'medium' ? 'common' : 'minion'
+                  const hpWidth = Math.max(12, Math.min(100, score * 10))
+                  const label = severity === 'critical' ? 'BOSS' : severity === 'high' ? 'ELITE' : severity === 'medium' ? 'COMMON' : 'MINION'
+                  const iconStyle = severity === 'critical' ? 'boss' : severity === 'high' ? 'elite' : severity === 'medium' ? 'common' : 'minion'
+
+                  return (
+                    <article className={`encounter-card ${tone}`} key={`${item.id}-${item.publishedAt ?? index}`}>
+                      <div className={`enemy-sprite ${iconStyle}`} aria-hidden="true">
+                        <span className="sprite-face" />
+                      </div>
+
+                      <div className="encounter-main">
+                        <div className="encounter-header">
+                          <span className="enemy-id">{item.id}</span>
+                          <span className={`rank-pill ${tone}`}>{label}</span>
+                        </div>
+
+                        <div className="enemy-name">[{getProductName(item.title, item.id)}]</div>
+
+                        <div className="hp-row">
+                          <span>HP</span>
+                          <div className="hp-bar">
+                            <span className={`hp-fill ${tone}`} style={{ width: `${hpWidth}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })
               )}
-            </>
+            </div>
           )}
         </section>
-
-        {rankedItems.length > visibleCount && (
-          <button type="button" className="load-more" onClick={() => setVisibleCount((count) => count + pageSize)}>
-            LOAD MORE <span aria-hidden="true">▾</span>
-          </button>
-        )}
-
-        <div className="footer-note">
-          DATA: <a href="https://cve.now/feed" target="_blank" rel="noreferrer">CVE.NOW RSS</a>
-          {' · '}{rankedItems.length} RESULTS
-          {status === 'loading' && items.length > 0 ? ' · UPDATING' : ''}
-        </div>
       </main>
+
+      <div className="system-panel" role="status">
+        <span className="system-label">SYSTEM</span>
+        <div className="system-message">
+          A new <strong>[{currentId}]</strong> appeared in the feed! What will you do?
+        </div>
+        <span className="cursor" aria-hidden="true">▾</span>
+      </div>
     </div>
   )
 }
