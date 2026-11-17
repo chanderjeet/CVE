@@ -1,54 +1,17 @@
-:root {
-  font-family: 'Trebuchet MS', 'Arial', sans-serif;
-  color: #f2f0ec;
-  background: #090a14;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-optical-sizing: auto;
-  font-weight: 400;
-
-  --bg: #090a14;
-  --panel: #10111e;
-  --panel-raised: #141522;
-  --line: #27283a;
-  --muted: #8d8e9d;
-  --soft: #c4c3ce;
-  --white: #f2f0ec;
-  --lime: #c7f464;
-  --pink: #ff66bd;
-  --cyan: #66e4ee;
-  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-}
-
 * {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
-  margin: 0;
-  background:
-    radial-gradient(ellipse at 50% 0%, rgb(47 39 80 / 23%), transparent 48rem),
-    var(--bg);
-}
-
-body::before {
-  position: fixed;
-  z-index: 3;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    rgb(255 255 255 / 1.4%) 1px,
-    transparent 2px,
-    transparent 4px
-  );
-  content: '';
-  inset: 0;
-  opacity: 0.21;
 }
 
 button,
@@ -63,35 +26,9 @@ select {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--lime);
-  outline-offset: 3px;
-}
-
-button {
-  color: inherit;
-}
-
-a {
-  color: inherit;
-}
-
 ::selection {
-  color: var(--bg);
-  background: var(--lime);
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  clip-path: inset(50%);
+  color: #1a1b2b;
+  background: #ffd16a;
 }
 
 @media (prefers-reduced-motion: reduce) {
