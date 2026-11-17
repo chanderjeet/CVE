@@ -8,6 +8,7 @@ export interface CveItem {
   link: string
   publishedAt: string | null
   description: string
+  cvssScore?: number | null
 }
 
 const parser = new XMLParser({
@@ -31,13 +32,22 @@ function normalizeItems(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [value]
 }
 
+function getCvssScore(value: string): number | null {
+  const updatedScore = value.match(/\bCVSS score changed from \d+(?:\.\d+)? to (\d+(?:\.\d+)?)/i)
+  const explicitScore = value.match(
+    /\bCVSS(?:\s+v[23](?:\.\d)?)?\s*(?:base\s*)?(?:score\s*)?(?:[:=]\s*)?(10(?:\.0)?|[0-9](?:\.\d)?)\b/i,
+  )
+  const score = Number(updatedScore?.[1] ?? explicitScore?.[1])
+  return Number.isFinite(score) && score >= 0 && score <= 10 ? score : null
+}
+
 function parseItem(value: unknown): CveItem | null {
   if (!isRecord(value)) return null
 
   const title = getText(value.title)
   const link = getText(value.link)
   const guid = getText(value.guid)
-  const id = guid || title.match(/CVE-\d{4}-\d+/i)?.[0] || ''
+  const id = title.match(/CVE-\d{4}-\d+/i)?.[0] || guid.match(/CVE-\d{4}-\d+/i)?.[0] || ''
 
   if (!id || !title || !link) return null
 
@@ -52,6 +62,7 @@ function parseItem(value: unknown): CveItem | null {
     link,
     publishedAt,
     description: getText(value.description),
+    cvssScore: getCvssScore(`${title} ${getText(value.description)}`),
   }
 }
 

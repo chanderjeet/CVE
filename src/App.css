@@ -124,6 +124,11 @@ input {
   color: var(--green);
 }
 
+.top-bar .live-state.is-error,
+.top-bar .live-state.is-error em {
+  color: var(--pink);
+}
+
 .page {
   padding-top: 12px;
 }
@@ -267,6 +272,13 @@ input {
   border-color: rgba(255, 255, 255, 0.9);
 }
 
+.filter-btn:focus-visible,
+.load-more:focus-visible,
+.feed-message button:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -327,7 +339,7 @@ input {
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 84px 180px minmax(180px, 1fr) 90px minmax(160px, 1fr);
+  grid-template-columns: 58px 150px minmax(180px, 1fr) 88px minmax(120px, 0.65fr);
   align-items: center;
   column-gap: 12px;
   padding: 0 16px;
@@ -346,6 +358,11 @@ input {
   border-top: 2px solid rgba(110, 122, 164, 0.45);
   color: #edf1ff;
   font-size: 11px;
+  text-decoration: none;
+}
+
+.table-row:hover {
+  background: rgba(103, 234, 242, 0.06);
 }
 
 .rank-cell {
@@ -358,8 +375,33 @@ input {
 }
 
 .product-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   color: #d2d6eb;
   opacity: 0.9;
+}
+
+.product-cell strong {
+  overflow: hidden;
+  color: #f1f3ff;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-cell > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #9da6c0;
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.1;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .level-cell {
@@ -383,12 +425,16 @@ input {
 .pill.high { background: rgba(247, 164, 64, 0.2); border-color: #f7a440; color: #f8b15d; }
 .pill.med { background: rgba(245, 215, 75, 0.2); border-color: #f5d74b; color: var(--yellow); }
 .pill.low { background: rgba(125, 242, 130, 0.2); border-color: #9fe66a; color: #b9ff7a; }
+.pill.unknown { background: rgba(168, 175, 201, 0.08); border-color: rgba(168, 175, 201, 0.35); color: #a8afc9; }
 
 .meter-cell {
+  position: relative;
   display: flex;
+  align-items: center;
   width: 100%;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -401,6 +447,53 @@ input {
 .meter.high { background: linear-gradient(90deg, #ffb24e, #f8913b); }
 .meter.med { background: linear-gradient(90deg, #f6d64e, #f5d74b); }
 .meter.low { background: linear-gradient(90deg, #79ec87, #a7f958); }
+
+.score-value {
+  position: absolute;
+  right: 5px;
+  color: #fff;
+  font-size: 9px;
+  text-shadow: 0 1px 3px #000;
+}
+
+.score-unavailable {
+  width: 100%;
+  color: #a8afc9;
+  font-size: 8px;
+  text-align: center;
+}
+
+.feed-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 14px;
+  border: 2px solid rgba(110, 122, 164, 0.45);
+  background: rgba(12, 17, 30, 0.72);
+  color: #c4cce2;
+  font-size: 10px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.error-message {
+  flex-wrap: wrap;
+  border-color: rgba(255, 106, 196, 0.55);
+  color: #ffacd9;
+}
+
+.error-message strong {
+  color: var(--pink);
+}
+
+.error-message button {
+  padding: 8px 12px;
+  border: 1px solid var(--pink);
+  color: var(--pink);
+  font-size: 9px;
+}
 
 .load-more {
   display: flex;
@@ -433,6 +526,15 @@ input {
   text-transform: uppercase;
 }
 
+.footer-note a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+.footer-note a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 760px) {
   .top-bar {
     grid-template-columns: 1fr 1fr;
@@ -458,14 +560,18 @@ input {
   }
 
   .table-row {
-    grid-template-columns: 62px minmax(0, 1fr) 110px;
+    grid-template-columns: 42px minmax(0, 1fr) 100px;
     row-gap: 8px;
     align-items: center;
     padding: 12px 14px;
   }
 
-  .product-cell {
+  .id-cell {
     grid-column: 2 / -1;
+  }
+
+  .product-cell {
+    grid-column: 1 / -1;
     font-size: 10px;
   }
 
@@ -474,7 +580,7 @@ input {
   }
 
   .meter-cell {
-    grid-column: 2 / -1;
+    grid-column: 3;
   }
 }
 
@@ -534,6 +640,17 @@ input {
   .level-cell,
   .meter-cell {
     grid-column: 2 / -1;
+  }
+
+  .table-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .id-cell,
+  .product-cell,
+  .level-cell,
+  .meter-cell {
+    grid-column: 2;
   }
 
   .load-more {

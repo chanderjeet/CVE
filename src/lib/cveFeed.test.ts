@@ -32,8 +32,18 @@ describe('parseCveFeed', () => {
       link: 'https://cve.now/CVE-2026-120490',
       publishedAt: '2026-11-12T14:16:34.000Z',
       description: 'A & B disclosure',
+      cvssScore: null,
     })
     expect(items[1].publishedAt).toBeNull()
+  })
+
+  it('extracts CVSS scores only when the feed explicitly provides them', () => {
+    const items = parseCveFeed(
+      '<rss><channel><item><title>CVE-2026-120490: Example (Update: CVSS score changed from 4.1 to 3.9)</title><link>https://cve.now/CVE-2026-120490</link><guid>CVE-2026-120490#2026-11-17T15:12:34.340Z</guid><description>CVSS 8.2</description></item></channel></rss>',
+    )
+
+    expect(items[0].id).toBe('CVE-2026-120490')
+    expect(items[0].cvssScore).toBe(3.9)
   })
 
   it('rejects malformed XML and documents without an RSS channel', () => {
