@@ -28,7 +28,7 @@ function getSeverity(score: number | null | undefined): Severity | null {
 
 function getProductName(title: string, id: string): string {
   const withoutId = title.replace(id, '').replace(/^:\s*/, '')
-  return withoutId.replace(/\s*\(Update:.*$/i, '').trim() || 'Description unavailable'
+  return withoutId.replace(/\s*\(Update:.*$/i, '').trim() || 'Vendor / product name'
 }
 
 function formatClock(value: Date | null): string {
